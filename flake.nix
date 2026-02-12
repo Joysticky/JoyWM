@@ -4,18 +4,21 @@
     flakelight ./. {
       devShell = {
         packages = pkgs: [
+          # Rust
           pkgs.cargo
           pkgs.rust-analyzer
           pkgs.rustc
           pkgs.clippy
           pkgs.rustfmt
 
+          # Wayland
           pkgs.libxkbcommon
           pkgs.wayland
           pkgs.wayland-protocols
           pkgs.wayland-scanner
           pkgs.libGL
 
+          # Other
           pkgs.just
         ];
 
