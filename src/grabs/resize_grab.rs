@@ -1,3 +1,9 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
 //! Resize grab is the state of a composer during which the client window is being resized.
 //!
 //! eg. Usually whenever a user clicks on the app's border and starts dragging, the compositors
