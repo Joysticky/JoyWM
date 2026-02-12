@@ -18,11 +18,11 @@ use smithay::{
     utils::{Rectangle, Transform},
 };
 
-use crate::Smallvil;
+use crate::state::JoyWM;
 
 pub fn init_winit(
-    event_loop: &mut EventLoop<Smallvil>,
-    state: &mut Smallvil,
+    event_loop: &mut EventLoop<JoyWM>,
+    state: &mut JoyWM,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let (mut backend, winit) = winit::init()?;
 
@@ -40,7 +40,7 @@ pub fn init_winit(
             model: "Winit".into(),
         },
     );
-    let _global = output.create_global::<Smallvil>(&state.display_handle);
+    let _global = output.create_global::<JoyWM>(&state.display_handle);
     output.change_current_state(Some(mode), Some(Transform::Flipped180), None, Some((0, 0).into()));
     output.set_preferred(mode);
 

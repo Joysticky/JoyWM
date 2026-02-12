@@ -28,7 +28,7 @@ use smithay::{
     },
 };
 
-pub struct Smallvil {
+pub struct JoyWM {
     pub start_time: std::time::Instant,
     pub socket_name: OsString,
     pub display_handle: DisplayHandle,
@@ -41,21 +41,21 @@ pub struct Smallvil {
     pub xdg_shell_state: XdgShellState,
     pub shm_state: ShmState,
     pub output_manager_state: OutputManagerState,
-    pub seat_state: SeatState<Smallvil>,
+    pub seat_state: SeatState<JoyWM>,
     pub data_device_state: DataDeviceState,
     pub popups: PopupManager,
 
     pub seat: Seat<Self>,
 }
 
-impl Smallvil {
+impl JoyWM {
     pub fn new(event_loop: &mut EventLoop<Self>, display: Display<Self>) -> Self {
         let start_time = std::time::Instant::now();
 
         let dh = display.handle();
 
         // Here we initialize implementations of some wayland protocols
-        // Some of them require us to implement traits on the Smallvil state,
+        // Some of them require us to implement traits on the JoyWM state,
         // you can find those implementations in the `crate::handlers` module
 
         // Initialize protocols needed for displaying windows
@@ -113,7 +113,7 @@ impl Smallvil {
         }
     }
 
-    fn init_wayland_listener(display: Display<Smallvil>, event_loop: &mut EventLoop<Self>) -> OsString {
+    fn init_wayland_listener(display: Display<JoyWM>, event_loop: &mut EventLoop<Self>) -> OsString {
         // Creates a new listening socket, automatically choosing the next available `wayland` socket name.
         let listening_socket = ListeningSocketSource::new_auto().unwrap();
 
@@ -161,7 +161,7 @@ impl Smallvil {
     }
 }
 
-/// Data associated with a wayland client that connects to Smallvil.
+/// Data associated with a wayland client that connects to JoyWM.
 /// One instance of this type per client.
 #[derive(Default)]
 pub struct ClientState {

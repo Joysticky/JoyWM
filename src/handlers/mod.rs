@@ -7,7 +7,7 @@
 mod compositor;
 mod xdg_shell;
 
-use crate::Smallvil;
+use crate::state::JoyWM;
 
 //
 // Wl Seat
@@ -24,12 +24,12 @@ use smithay::wayland::selection::data_device::{
 use smithay::wayland::selection::SelectionHandler;
 use smithay::{delegate_data_device, delegate_output, delegate_seat};
 
-impl SeatHandler for Smallvil {
+impl SeatHandler for JoyWM {
     type KeyboardFocus = WlSurface;
     type PointerFocus = WlSurface;
     type TouchFocus = WlSurface;
 
-    fn seat_state(&mut self) -> &mut SeatState<Smallvil> {
+    fn seat_state(&mut self) -> &mut SeatState<JoyWM> {
         &mut self.seat_state
     }
 
@@ -42,30 +42,30 @@ impl SeatHandler for Smallvil {
     }
 }
 
-delegate_seat!(Smallvil);
+delegate_seat!(JoyWM);
 
 //
 // Wl Data Device
 //
 
-impl SelectionHandler for Smallvil {
+impl SelectionHandler for JoyWM {
     type SelectionUserData = ();
 }
 
-impl DataDeviceHandler for Smallvil {
+impl DataDeviceHandler for JoyWM {
     fn data_device_state(&self) -> &DataDeviceState {
         &self.data_device_state
     }
 }
 
-impl ClientDndGrabHandler for Smallvil {}
-impl ServerDndGrabHandler for Smallvil {}
+impl ClientDndGrabHandler for JoyWM {}
+impl ServerDndGrabHandler for JoyWM {}
 
-delegate_data_device!(Smallvil);
+delegate_data_device!(JoyWM);
 
 //
 // Wl Output & Xdg Output
 //
 
-impl OutputHandler for Smallvil {}
-delegate_output!(Smallvil);
+impl OutputHandler for JoyWM {}
+delegate_output!(JoyWM);

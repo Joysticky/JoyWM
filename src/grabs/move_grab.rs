@@ -10,7 +10,7 @@
 //! eg. Usually whenever a user clicks on the app's titlebar and starts dragging, the compositors
 //! enters a MoveSurfaceGrab state.
 
-use crate::Smallvil;
+use crate::state::JoyWM;
 use smithay::{
     desktop::Window,
     input::pointer::{
@@ -24,16 +24,16 @@ use smithay::{
 };
 
 pub struct MoveSurfaceGrab {
-    pub start_data: PointerGrabStartData<Smallvil>,
+    pub start_data: PointerGrabStartData<JoyWM>,
     pub window: Window,
     pub initial_window_location: Point<i32, Logical>,
 }
 
-impl PointerGrab<Smallvil> for MoveSurfaceGrab {
+impl PointerGrab<JoyWM> for MoveSurfaceGrab {
     fn motion(
         &mut self,
-        data: &mut Smallvil,
-        handle: &mut PointerInnerHandle<'_, Smallvil>,
+        data: &mut JoyWM,
+        handle: &mut PointerInnerHandle<'_, JoyWM>,
         _focus: Option<(WlSurface, Point<f64, Logical>)>,
         event: &MotionEvent,
     ) {
@@ -48,8 +48,8 @@ impl PointerGrab<Smallvil> for MoveSurfaceGrab {
 
     fn relative_motion(
         &mut self,
-        data: &mut Smallvil,
-        handle: &mut PointerInnerHandle<'_, Smallvil>,
+        data: &mut JoyWM,
+        handle: &mut PointerInnerHandle<'_, JoyWM>,
         focus: Option<(WlSurface, Point<f64, Logical>)>,
         event: &RelativeMotionEvent,
     ) {
@@ -58,8 +58,8 @@ impl PointerGrab<Smallvil> for MoveSurfaceGrab {
 
     fn button(
         &mut self,
-        data: &mut Smallvil,
-        handle: &mut PointerInnerHandle<'_, Smallvil>,
+        data: &mut JoyWM,
+        handle: &mut PointerInnerHandle<'_, JoyWM>,
         event: &ButtonEvent,
     ) {
         handle.button(data, event);
@@ -76,21 +76,21 @@ impl PointerGrab<Smallvil> for MoveSurfaceGrab {
 
     fn axis(
         &mut self,
-        data: &mut Smallvil,
-        handle: &mut PointerInnerHandle<'_, Smallvil>,
+        data: &mut JoyWM,
+        handle: &mut PointerInnerHandle<'_, JoyWM>,
         details: AxisFrame,
     ) {
         handle.axis(data, details)
     }
 
-    fn frame(&mut self, data: &mut Smallvil, handle: &mut PointerInnerHandle<'_, Smallvil>) {
+    fn frame(&mut self, data: &mut JoyWM, handle: &mut PointerInnerHandle<'_, JoyWM>) {
         handle.frame(data);
     }
 
     fn gesture_swipe_begin(
         &mut self,
-        data: &mut Smallvil,
-        handle: &mut PointerInnerHandle<'_, Smallvil>,
+        data: &mut JoyWM,
+        handle: &mut PointerInnerHandle<'_, JoyWM>,
         event: &GestureSwipeBeginEvent,
     ) {
         handle.gesture_swipe_begin(data, event)
@@ -98,8 +98,8 @@ impl PointerGrab<Smallvil> for MoveSurfaceGrab {
 
     fn gesture_swipe_update(
         &mut self,
-        data: &mut Smallvil,
-        handle: &mut PointerInnerHandle<'_, Smallvil>,
+        data: &mut JoyWM,
+        handle: &mut PointerInnerHandle<'_, JoyWM>,
         event: &GestureSwipeUpdateEvent,
     ) {
         handle.gesture_swipe_update(data, event)
@@ -107,8 +107,8 @@ impl PointerGrab<Smallvil> for MoveSurfaceGrab {
 
     fn gesture_swipe_end(
         &mut self,
-        data: &mut Smallvil,
-        handle: &mut PointerInnerHandle<'_, Smallvil>,
+        data: &mut JoyWM,
+        handle: &mut PointerInnerHandle<'_, JoyWM>,
         event: &GestureSwipeEndEvent,
     ) {
         handle.gesture_swipe_end(data, event)
@@ -116,8 +116,8 @@ impl PointerGrab<Smallvil> for MoveSurfaceGrab {
 
     fn gesture_pinch_begin(
         &mut self,
-        data: &mut Smallvil,
-        handle: &mut PointerInnerHandle<'_, Smallvil>,
+        data: &mut JoyWM,
+        handle: &mut PointerInnerHandle<'_, JoyWM>,
         event: &GesturePinchBeginEvent,
     ) {
         handle.gesture_pinch_begin(data, event)
@@ -125,8 +125,8 @@ impl PointerGrab<Smallvil> for MoveSurfaceGrab {
 
     fn gesture_pinch_update(
         &mut self,
-        data: &mut Smallvil,
-        handle: &mut PointerInnerHandle<'_, Smallvil>,
+        data: &mut JoyWM,
+        handle: &mut PointerInnerHandle<'_, JoyWM>,
         event: &GesturePinchUpdateEvent,
     ) {
         handle.gesture_pinch_update(data, event)
@@ -134,8 +134,8 @@ impl PointerGrab<Smallvil> for MoveSurfaceGrab {
 
     fn gesture_pinch_end(
         &mut self,
-        data: &mut Smallvil,
-        handle: &mut PointerInnerHandle<'_, Smallvil>,
+        data: &mut JoyWM,
+        handle: &mut PointerInnerHandle<'_, JoyWM>,
         event: &GesturePinchEndEvent,
     ) {
         handle.gesture_pinch_end(data, event)
@@ -143,8 +143,8 @@ impl PointerGrab<Smallvil> for MoveSurfaceGrab {
 
     fn gesture_hold_begin(
         &mut self,
-        data: &mut Smallvil,
-        handle: &mut PointerInnerHandle<'_, Smallvil>,
+        data: &mut JoyWM,
+        handle: &mut PointerInnerHandle<'_, JoyWM>,
         event: &GestureHoldBeginEvent,
     ) {
         handle.gesture_hold_begin(data, event)
@@ -152,16 +152,16 @@ impl PointerGrab<Smallvil> for MoveSurfaceGrab {
 
     fn gesture_hold_end(
         &mut self,
-        data: &mut Smallvil,
-        handle: &mut PointerInnerHandle<'_, Smallvil>,
+        data: &mut JoyWM,
+        handle: &mut PointerInnerHandle<'_, JoyWM>,
         event: &GestureHoldEndEvent,
     ) {
         handle.gesture_hold_end(data, event)
     }
 
-    fn start_data(&self) -> &PointerGrabStartData<Smallvil> {
+    fn start_data(&self) -> &PointerGrabStartData<JoyWM> {
         &self.start_data
     }
 
-    fn unset(&mut self, _data: &mut Smallvil) {}
+    fn unset(&mut self, _data: &mut JoyWM) {}
 }
