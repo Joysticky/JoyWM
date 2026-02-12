@@ -6,11 +6,7 @@
 
 use smithay::{
     delegate_xdg_shell,
-    desktop::{find_popup_root_surface, get_popup_toplevel_coords, PopupKind, PopupManager, Space, Window},
-    input::{
-        pointer::{Focus, GrabStartData as PointerGrabStartData},
-        Seat,
-    },
+    desktop::{PopupKind, PopupManager, Space, Window},
     reexports::{
         wayland_protocols::xdg::shell::server::xdg_toplevel,
         wayland_server::{
@@ -28,10 +24,7 @@ use smithay::{
     },
 };
 
-use crate::{
-    grabs::{MoveSurfaceGrab, ResizeSurfaceGrab},
-    state::JoyWM,
-};
+use crate::state::JoyWM;
 
 impl XdgShellHandler for JoyWM {
     fn xdg_shell_state(&mut self) -> &mut XdgShellState {
@@ -40,11 +33,12 @@ impl XdgShellHandler for JoyWM {
 
     fn new_toplevel(&mut self, surface: ToplevelSurface) {
         let window = Window::new_wayland_window(surface);
+        self.tiled_windows.push(window.clone());
         self.space.map_element(window, (0, 0), false);
+        self.retile();
     }
 
     fn new_popup(&mut self, surface: PopupSurface, _positioner: PositionerState) {
-        self.unconstrain_popup(&surface);
         let _ = self.popups.track_popup(PopupKind::Xdg(surface));
     }
 
@@ -54,74 +48,21 @@ impl XdgShellHandler for JoyWM {
             state.geometry = geometry;
             state.positioner = positioner;
         });
-        self.unconstrain_popup(&surface);
         surface.send_repositioned(token);
     }
 
-    fn move_request(&mut self, surface: ToplevelSurface, seat: wl_seat::WlSeat, serial: Serial) {
-        let seat = Seat::from_resource(&seat).unwrap();
-
-        let wl_surface = surface.wl_surface();
-
-        if let Some(start_data) = check_grab(&seat, wl_surface, serial) {
-            let pointer = seat.get_pointer().unwrap();
-
-            let window = self
-                .space
-                .elements()
-                .find(|w| w.toplevel().unwrap().wl_surface() == wl_surface)
-                .unwrap()
-                .clone();
-            let initial_window_location = self.space.element_location(&window).unwrap();
-
-            let grab = MoveSurfaceGrab {
-                start_data,
-                window,
-                initial_window_location,
-            };
-
-            pointer.set_grab(self, grab, serial, Focus::Clear);
-        }
+    fn move_request(&mut self, _surface: ToplevelSurface, _seat: wl_seat::WlSeat, _serial: Serial) {
+        return;
     }
 
     fn resize_request(
         &mut self,
-        surface: ToplevelSurface,
-        seat: wl_seat::WlSeat,
-        serial: Serial,
-        edges: xdg_toplevel::ResizeEdge,
+        _surface: ToplevelSurface,
+        _seat: wl_seat::WlSeat,
+        _serial: Serial,
+        _edges: xdg_toplevel::ResizeEdge,
     ) {
-        let seat = Seat::from_resource(&seat).unwrap();
-
-        let wl_surface = surface.wl_surface();
-
-        if let Some(start_data) = check_grab(&seat, wl_surface, serial) {
-            let pointer = seat.get_pointer().unwrap();
-
-            let window = self
-                .space
-                .elements()
-                .find(|w| w.toplevel().unwrap().wl_surface() == wl_surface)
-                .unwrap()
-                .clone();
-            let initial_window_location = self.space.element_location(&window).unwrap();
-            let initial_window_size = window.geometry().size;
-
-            surface.with_pending_state(|state| {
-                state.states.set(xdg_toplevel::State::Resizing);
-            });
-
-            surface.send_pending_configure();
-
-            let grab = ResizeSurfaceGrab::start(
-                start_data,
-                window,
-                edges.into(),
-                Rectangle::new(initial_window_location, initial_window_size),
-            );
-
-            pointer.set_grab(self, grab, serial, Focus::Clear);
-        }
+        return;
     }
 
     fn grab(&mut self, _surface: PopupSurface, _seat: wl_seat::WlSeat, _serial: Serial) {
@@ -131,29 +72,6 @@ impl XdgShellHandler for JoyWM {
 
 // Xdg Shell
 delegate_xdg_shell!(JoyWM);
-
-fn check_grab(
-    seat: &Seat<JoyWM>,
-    surface: &WlSurface,
-    serial: Serial,
-) -> Option<PointerGrabStartData<JoyWM>> {
-    let pointer = seat.get_pointer()?;
-
-    // Check that this surface has a click grab.
-    if !pointer.has_grab(serial) {
-        return None;
-    }
-
-    let start_data = pointer.grab_start_data()?;
-
-    let (focus, _) = start_data.focus.as_ref()?;
-    // If the focus was for a different surface, ignore the request.
-    if !focus.id().same_client_as(&surface.id()) {
-        return None;
-    }
-
-    Some(start_data)
-}
 
 /// Should be called on `WlSurface::commit`
 pub fn handle_commit(popups: &mut PopupManager, space: &Space<Window>, surface: &WlSurface) {
@@ -195,30 +113,46 @@ pub fn handle_commit(popups: &mut PopupManager, space: &Space<Window>, surface: 
 }
 
 impl JoyWM {
-    fn unconstrain_popup(&self, popup: &PopupSurface) {
-        let Ok(root) = find_popup_root_surface(&PopupKind::Xdg(popup.clone())) else {
-            return;
-        };
-        let Some(window) = self
-            .space
-            .elements()
-            .find(|w| w.toplevel().unwrap().wl_surface() == &root)
-        else {
-            return;
+    pub fn retile(&mut self) {
+        let output = match self.space.outputs().next() {
+            Some(o) => o,
+            None => return,
         };
 
-        let output = self.space.outputs().next().unwrap();
-        let output_geo = self.space.output_geometry(output).unwrap();
-        let window_geo = self.space.element_geometry(window).unwrap();
+        let output_geo = match self.space.output_geometry(output) {
+            Some(g) => g,
+            None => return,
+        };
 
-        // The target geometry for the positioner should be relative to its parent's geometry, so
-        // we will compute that here.
-        let mut target = output_geo;
-        target.loc -= get_popup_toplevel_coords(&PopupKind::Xdg(popup.clone()));
-        target.loc -= window_geo.loc;
+        let count = self.tiled_windows.len();
+        if count == 0 {
+            return;
+        }
 
-        popup.with_pending_state(|state| {
-            state.geometry = state.positioner.get_unconstrained_geometry(target);
-        });
+        let width = output_geo.size.w / count as i32;
+
+        for (i, window) in self.tiled_windows.iter().enumerate() {
+            let x = output_geo.loc.x + width * i as i32;
+
+            let rect = Rectangle::from_loc_and_size(
+                (x, output_geo.loc.y),
+                (width, output_geo.size.h),
+            );
+
+            self.space.map_element(window.clone(), rect.loc, false);
+
+            if let Some(toplevel) = window.toplevel() {
+                toplevel.with_pending_state(|state| {
+                    state.size = Some(rect.size);
+                });
+                toplevel.send_configure();
+            }
+        }
+    }
+
+    pub fn remove_toplevel(&mut self, surface: &WlSurface) {
+        self.tiled_windows
+            .retain(|w| w.toplevel().unwrap().wl_surface() != surface);
+        self.retile();
     }
 }
